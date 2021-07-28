@@ -108,6 +108,9 @@ void EQFedeAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock
     rightChain.prepare(spec);
 
     updateFilters();
+
+    leftChannelFifo.prepare(samplesPerBlock);
+    rightChannelFifo.prepare(samplesPerBlock);
 }
 
 void EQFedeAudioProcessor::releaseResources()
@@ -170,13 +173,9 @@ void EQFedeAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
     leftChain.process(leftContext);
     rightChain.process(rightContext);
 
+    leftChannelFifo.update(buffer);
+    rightChannelFifo.update(buffer);
 
-    //for (int channel = 0; channel < totalNumInputChannels; ++channel)
-    //{
-    //    auto* channelData = buffer.getWritePointer (channel);
-
-    //    // ..do something to the data...
-    //}
 }
 
 //==============================================================================
