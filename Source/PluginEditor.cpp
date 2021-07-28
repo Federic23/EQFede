@@ -9,6 +9,112 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
+void LookAndFeel::drawRotarySlider(juce::Graphics& g,
+                                    int x,
+                                    int y,
+                                    int width,
+                                    int height,
+                                    float sliderPosProportional,
+                                    float rotaryStartAngle,
+                                    float rotaryEndAngle,
+                                    juce::Slider& slider)
+{
+    using namespace juce;
+
+    auto bounds = Rectangle<float>(x, y, width, height);
+
+    auto enabled = slider.isEnabled();
+
+    g.setColour(enabled ? Colour(97u, 18u, 167u) : Colours::darkgrey);
+    g.fillEllipse(bounds);
+
+    g.setColour(enabled ? Colour(255u, 154u, 1u) : Colours::grey);
+    g.drawEllipse(bounds, 1.f);
+
+    auto center = bounds.getCentre();
+    Path p;
+
+    Rectangle<float> r;
+    r.setLeft(center.getX() - 2);
+    r.setRight(center.getX() + 2);
+    r.setTop(bounds.getY());
+    r.setBottom(center.getY());
+
+    p.addRectangle(r);
+
+    jassert(rotaryStartAngle < rotaryEndAngle);
+
+    auto sliderAngRad = jmap(sliderPosProportional, 0.f, 1.f, rotaryStartAngle, rotaryEndAngle);
+
+    p.applyTransform(AffineTransform().rotated(sliderAngRad, center.getX(), center.getY()));
+
+    g.fillPath(p);
+
+    /*if (auto* rswl = dynamic_cast<RotarySliderWithLabels*>(&slider))
+    {
+        auto center = bounds.getCentre();
+        Path p;
+
+        Rectangle<float> r;
+        r.setLeft(center.getX() - 2);
+        r.setRight(center.getX() + 2);
+        r.setTop(bounds.getY());
+        r.setBottom(center.getY() - rswl->getTextHeight() * 1.5);
+
+        p.addRoundedRectangle(r, 2.f);
+
+        jassert(rotaryStartAngle < rotaryEndAngle);
+
+        auto sliderAngRad = jmap(sliderPosProportional, 0.f, 1.f, rotaryStartAngle, rotaryEndAngle);
+
+        p.applyTransform(AffineTransform().rotated(sliderAngRad, center.getX(), center.getY()));
+
+        g.fillPath(p);
+
+        g.setFont(rswl->getTextHeight());
+        auto text = rswl->getDisplayString();
+        auto strWidth = g.getCurrentFont().getStringWidth(text);
+
+        r.setSize(strWidth + 4, rswl->getTextHeight() + 2);
+        r.setCentre(bounds.getCentre());
+
+        g.setColour(enabled ? Colours::black : Colours::darkgrey);
+        g.fillRect(r);
+
+        g.setColour(enabled ? Colours::white : Colours::lightgrey);
+        g.drawFittedText(text, r.toNearestInt(), juce::Justification::centred, 1);
+    }*/
+}
+
+
+void RotarySliderWithLabels::paint(juce::Graphics& g)
+{
+    using namespace juce;
+
+    auto startAng = degreesToRadians(225.f);
+    auto endAng = degreesToRadians(135.f) + MathConstants<float>::twoPi;
+
+    auto range = getRange();
+
+    auto sliderBounds = getSliderBounds();
+
+    getLookAndFeel().drawRotarySlider(g,
+                                    sliderBounds.getX(),
+                                    sliderBounds.getY(),
+                                    sliderBounds.getWidth(),
+                                    sliderBounds.getHeight(),
+                                    jmap(getValue(), range.getStart(), range.getEnd(), 0.0, 1.0),
+                                    startAng,
+                                    endAng,
+                                    *this);
+}
+
+juce::Rectangle<int> RotarySliderWithLabels::getSliderBounds() const
+{
+    return getLocalBounds();
+}
+
+// ==============================================================================
 ResponseCurveComponent::ResponseCurveComponent(EQFedeAudioProcessor& p) : audioProcessor(p)
 {
     const auto& params = audioProcessor.getParameters();
@@ -130,7 +236,16 @@ void ResponseCurveComponent::paint(juce::Graphics& g)
 //==============================================================================
 EQFedeAudioProcessorEditor::EQFedeAudioProcessorEditor (EQFedeAudioProcessor& p)
     : AudioProcessorEditor (&p), audioProcessor (p),
+peakFreqSlider(*audioProcessor.audioValueTreeState.getParameter("Peak Freq"), "Hz"),
+peakGainSlider(*audioProcessor.audioValueTreeState.getParameter("Peak Gain"), "dB"),
+peakQualitySlider(*audioProcessor.audioValueTreeState.getParameter("Peak Quality"), ""),
+lowCutFreqSlider(*audioProcessor.audioValueTreeState.getParameter("LowCut Freq"), "Hz"),
+highCutFreqSlider(*audioProcessor.audioValueTreeState.getParameter("HighCut Freq"), "Hz"),
+lowCutSlopeSlider(*audioProcessor.audioValueTreeState.getParameter("LowCut Slope"), "dB/Oct"),
+highCutSlopeSlider(*audioProcessor.audioValueTreeState.getParameter("HighCut Slope"), "db/Oct"),
+
 responseCurveComponent(audioProcessor),
+
 peakFreqSliderAttachment(audioProcessor.audioValueTreeState, "Peak Freq", peakFreqSlider),
 peakGainSliderAttachment(audioProcessor.audioValueTreeState, "Peak Gain", peakGainSlider),
 peakQualitySliderAttachment(audioProcessor.audioValueTreeState, "Peak Quality", peakQualitySlider),
@@ -200,3 +315,4 @@ std::vector<juce::Component*> EQFedeAudioProcessorEditor::getComps()
         &responseCurveComponent
     };
 }
+
