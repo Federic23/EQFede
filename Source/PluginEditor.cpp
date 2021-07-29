@@ -67,6 +67,59 @@ void LookAndFeel::drawRotarySlider(juce::Graphics& g,
     }
 }
 
+void LookAndFeel::drawToggleButton(juce::Graphics& g,
+                                    juce::ToggleButton& toggleButton,
+                                    bool shouldDrawButtonAsHighlighted,
+                                    bool shouldDrawButtonAsDown)
+{
+    using namespace juce;
+
+    //if (auto* pb = dynamic_cast<PowerButton*>(&toggleButton))
+    //{
+        Path powerButton;
+
+        auto bounds = toggleButton.getLocalBounds();
+
+        auto size = jmin(bounds.getWidth(), bounds.getHeight()) - 6;
+        auto r = bounds.withSizeKeepingCentre(size, size).toFloat();
+
+        float ang = 30.f; //30.f;
+
+        size -= 6;
+
+        powerButton.addCentredArc(r.getCentreX(),
+                                r.getCentreY(),
+                                size * 0.5,
+                                size * 0.5,
+                                0.f,
+                                degreesToRadians(ang),
+                                degreesToRadians(360.f - ang),
+                                true);
+
+        powerButton.startNewSubPath(r.getCentreX(), r.getY());
+        powerButton.lineTo(r.getCentre());
+
+        PathStrokeType pst(2.f, PathStrokeType::JointStyle::curved);
+
+        auto color = toggleButton.getToggleState() ? Colours::dimgrey : Colour(0u, 172u, 1u);
+
+        g.setColour(color);
+        g.strokePath(powerButton, pst);
+        g.drawEllipse(r, 2);
+    //}
+    //else if (auto* analyzerButton = dynamic_cast<AnalyzerButton*>(&toggleButton))
+    //{
+        /*auto color = !toggleButton.getToggleState() ? Colours::dimgrey : Colour(0u, 172u, 1u);
+
+        g.setColour(color);
+
+        auto bounds = toggleButton.getLocalBounds();
+        g.drawRect(bounds);
+
+        g.strokePath(analyzerButton->randomPath, PathStrokeType(1.f));*/
+    //}
+}
+
 
 void RotarySliderWithLabels::paint(juce::Graphics& g)
 {
@@ -261,6 +314,11 @@ void ResponseCurveComponent::timerCallback()
 void ResponseCurveComponent::updateChain()
 {
     auto chainSettings = getChainSettings(audioProcessor.audioValueTreeState);
+
+    monoChain.setBypassed<ChainPositions::LowCut>(chainSettings.lowCutBypassed);
+    monoChain.setBypassed<ChainPositions::Peak>(chainSettings.peakBypassed);
+    monoChain.setBypassed<ChainPositions::HighCut>(chainSettings.highCutBypassed);
+
     auto peakCoefficients = makePeakFilter(chainSettings, audioProcessor.getSampleRate());
     updateCoefficients(monoChain.get<ChainPositions::Peak>().coefficients, peakCoefficients);
 
@@ -304,23 +362,29 @@ void ResponseCurveComponent::paint(juce::Graphics& g)
             mag *= peak.coefficients->getMagnitudeForFrequency(freq, sampleRate);
         }
 
-        if (!lowCut.isBypassed<0>())
-            mag *= lowCut.get<0>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
-        if (!lowCut.isBypassed<1>())
-            mag *= lowCut.get<1>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
-        if (!lowCut.isBypassed<2>())
-            mag *= lowCut.get<2>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
-        if (!lowCut.isBypassed<3>())
-            mag *= lowCut.get<3>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
+        if (!monoChain.isBypassed<ChainPositions::LowCut>())
+        {
+            if (!lowCut.isBypassed<0>())
+                mag *= lowCut.get<0>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
+            if (!lowCut.isBypassed<1>())
+                mag *= lowCut.get<1>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
+            if (!lowCut.isBypassed<2>())
+                mag *= lowCut.get<2>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
+            if (!lowCut.isBypassed<3>())
+                mag *= lowCut.get<3>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
+        }
 
-        if (!highCut.isBypassed<0>())
-            mag *= highCut.get<0>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
-        if (!highCut.isBypassed<1>())
-            mag *= highCut.get<1>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
-        if (!highCut.isBypassed<2>())
-            mag *= highCut.get<2>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
-        if (!highCut.isBypassed<3>())
-            mag *= highCut.get<3>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
+        if (!monoChain.isBypassed<ChainPositions::HighCut>())
+        {
+            if (!highCut.isBypassed<0>())
+                mag *= highCut.get<0>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
+            if (!highCut.isBypassed<1>())
+                mag *= highCut.get<1>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
+            if (!highCut.isBypassed<2>())
+                mag *= highCut.get<2>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
+            if (!highCut.isBypassed<3>())
+                mag *= highCut.get<3>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
+        }
 
         mags[i] = Decibels::gainToDecibels(mag);
 
@@ -518,7 +582,12 @@ peakQualitySliderAttachment(audioProcessor.audioValueTreeState, "Peak Quality", 
 lowCutFreqSliderAttachment(audioProcessor.audioValueTreeState, "LowCut Freq", lowCutFreqSlider),
 highCutFreqSliderAttachment(audioProcessor.audioValueTreeState, "HighCut Freq", highCutFreqSlider),
 lowCutSlopeSliderAttachment(audioProcessor.audioValueTreeState, "LowCut Slope", lowCutSlopeSlider),
-highCutSlopeSliderAttachment(audioProcessor.audioValueTreeState, "HighCut Slope", highCutSlopeSlider)
+highCutSlopeSliderAttachment(audioProcessor.audioValueTreeState, "HighCut Slope", highCutSlopeSlider),
+
+lowcutBypassButtonAttachment(audioProcessor.audioValueTreeState, "LowCut Bypassed", lowcutBypassButton),
+peakBypassButtonAttachment(audioProcessor.audioValueTreeState, "Peak Bypassed", peakBypassButton),
+highcutBypassButtonAttachment(audioProcessor.audioValueTreeState, "HighCut Bypassed", highcutBypassButton),
+analyzerEnabledButtonAttachment(audioProcessor.audioValueTreeState, "Analyzer Enabled", analyzerEnabledButton)
 {
     peakFreqSlider.labels.add({ 0.f, "20Hz" });
     peakFreqSlider.labels.add({ 1.f, "20kHz" });
@@ -546,11 +615,22 @@ highCutSlopeSliderAttachment(audioProcessor.audioValueTreeState, "HighCut Slope"
         addAndMakeVisible(comp);
     }
 
+    peakBypassButton.setLookAndFeel(&lookAndFeel);
+    highcutBypassButton.setLookAndFeel(&lookAndFeel);
+    lowcutBypassButton.setLookAndFeel(&lookAndFeel);
+
+    analyzerEnabledButton.setLookAndFeel(&lookAndFeel);
+
     setSize (600, 480);
 }
 
 EQFedeAudioProcessorEditor::~EQFedeAudioProcessorEditor()
 {
+    peakBypassButton.setLookAndFeel(nullptr);
+    highcutBypassButton.setLookAndFeel(nullptr);
+    lowcutBypassButton.setLookAndFeel(nullptr);
+
+    analyzerEnabledButton.setLookAndFeel(nullptr);
 }
 
 //==============================================================================
@@ -577,12 +657,15 @@ void EQFedeAudioProcessorEditor::resized()
     auto lowCutArea = bounds.removeFromLeft(bounds.getWidth() * 0.33);
     auto highCutArea = bounds.removeFromRight(bounds.getWidth() * 0.5);
 
+    lowcutBypassButton.setBounds(lowCutArea.removeFromTop(25));
     lowCutFreqSlider.setBounds(lowCutArea.removeFromTop(lowCutArea.getHeight() * 0.5));
     lowCutSlopeSlider.setBounds(lowCutArea);
 
+    highcutBypassButton.setBounds(highCutArea.removeFromTop(25));
     highCutFreqSlider.setBounds(highCutArea.removeFromTop(highCutArea.getHeight() * 0.5));
     highCutSlopeSlider.setBounds(highCutArea);
 
+    peakBypassButton.setBounds(bounds.removeFromTop(25));
     peakFreqSlider.setBounds(bounds.removeFromTop(bounds.getHeight() * 0.33));
     peakGainSlider.setBounds(bounds.removeFromTop(bounds.getHeight() * 0.5));
     peakQualitySlider.setBounds(bounds);
@@ -600,7 +683,12 @@ std::vector<juce::Component*> EQFedeAudioProcessorEditor::getComps()
         &highCutFreqSlider,
         &lowCutSlopeSlider, 
         &highCutSlopeSlider,
-        &responseCurveComponent
+        &responseCurveComponent,
+
+        &lowcutBypassButton,
+        &peakBypassButton,
+        &highcutBypassButton,
+        &analyzerEnabledButton
     };
 }
 
