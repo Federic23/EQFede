@@ -23,6 +23,8 @@ void LookAndFeel::drawRotarySlider(juce::Graphics& g,
 
     auto bounds = Rectangle<float>(x, y, width, height);
 
+
+
     auto enabled = slider.isEnabled();
 
     g.setColour(enabled ? Colour(97u, 18u, 167u) : Colours::darkgrey);
@@ -74,8 +76,8 @@ void LookAndFeel::drawToggleButton(juce::Graphics& g,
 {
     using namespace juce;
 
-    //if (auto* pb = dynamic_cast<PowerButton*>(&toggleButton))
-    //{
+    if (auto* pb = dynamic_cast<PowerButton*>(&toggleButton))
+    {
         Path powerButton;
 
         auto bounds = toggleButton.getLocalBounds();
@@ -83,7 +85,7 @@ void LookAndFeel::drawToggleButton(juce::Graphics& g,
         auto size = jmin(bounds.getWidth(), bounds.getHeight()) - 6;
         auto r = bounds.withSizeKeepingCentre(size, size).toFloat();
 
-        float ang = 30.f; //30.f;
+        float ang = 30.f;
 
         size -= 6;
 
@@ -106,18 +108,18 @@ void LookAndFeel::drawToggleButton(juce::Graphics& g,
         g.setColour(color);
         g.strokePath(powerButton, pst);
         g.drawEllipse(r, 2);
-    //}
-    //else if (auto* analyzerButton = dynamic_cast<AnalyzerButton*>(&toggleButton))
-    //{
-        /*auto color = !toggleButton.getToggleState() ? Colours::dimgrey : Colour(0u, 172u, 1u);
+    }
+    else if (auto* analyzerButton = dynamic_cast<AnalyzerButton*>(&toggleButton))
+    {
+        auto color = !toggleButton.getToggleState() ? Colours::dimgrey : Colour(0u, 172u, 1u);
 
         g.setColour(color);
 
         auto bounds = toggleButton.getLocalBounds();
         g.drawRect(bounds);
 
-        g.strokePath(analyzerButton->randomPath, PathStrokeType(1.f));*/
-    //}
+        g.strokePath(analyzerButton->randomPath, PathStrokeType(1.f));
+   }
 }
 
 
@@ -621,6 +623,52 @@ analyzerEnabledButtonAttachment(audioProcessor.audioValueTreeState, "Analyzer En
 
     analyzerEnabledButton.setLookAndFeel(&lookAndFeel);
 
+
+    auto safePtr = juce::Component::SafePointer<EQFedeAudioProcessorEditor>(this);
+    peakBypassButton.onClick = [safePtr]()
+    {
+        if (auto* comp = safePtr.getComponent())
+        {
+            auto bypassed = comp->peakBypassButton.getToggleState();
+
+            comp->peakFreqSlider.setEnabled(!bypassed);
+            comp->peakGainSlider.setEnabled(!bypassed);
+            comp->peakQualitySlider.setEnabled(!bypassed);
+        }
+    };
+
+
+    lowcutBypassButton.onClick = [safePtr]()
+    {
+        if (auto* comp = safePtr.getComponent())
+        {
+            auto bypassed = comp->lowcutBypassButton.getToggleState();
+
+            comp->lowCutFreqSlider.setEnabled(!bypassed);
+            comp->lowCutSlopeSlider.setEnabled(!bypassed);
+        }
+    };
+
+    highcutBypassButton.onClick = [safePtr]()
+    {
+        if (auto* comp = safePtr.getComponent())
+        {
+            auto bypassed = comp->highcutBypassButton.getToggleState();
+
+            comp->highCutFreqSlider.setEnabled(!bypassed);
+            comp->highCutSlopeSlider.setEnabled(!bypassed);
+        }
+    };
+
+    analyzerEnabledButton.onClick = [safePtr]()
+    {
+        if (auto* comp = safePtr.getComponent())
+        {
+            auto enabled = comp->analyzerEnabledButton.getToggleState();
+            //comp->responseCurveComponent.toggleAnalysisEnablement(enabled);
+        }
+    };
+
     setSize (600, 480);
 }
 
@@ -647,6 +695,17 @@ void EQFedeAudioProcessorEditor::resized()
     // subcomponents in your editor..
 
     auto bounds = getLocalBounds();
+    
+    //Esto por ahora rompe todo
+    auto analyzerEnabledArea = bounds.removeFromTop(25);
+    analyzerEnabledArea.setWidth(100);
+    analyzerEnabledArea.setX(5);
+    analyzerEnabledArea.removeFromTop(2);
+
+    analyzerEnabledButton.setBounds(analyzerEnabledArea);
+
+    bounds.removeFromTop(5);
+
     float hRatio = 25.f / 100.f;
     auto responseArea = bounds.removeFromTop(bounds.getHeight() * hRatio);
 
