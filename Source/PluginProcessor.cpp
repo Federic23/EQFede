@@ -251,7 +251,7 @@ void EQFedeAudioProcessor::updatePeakFilter(const ChainSettings& chainSettings)
     updateCoefficients(rightChain.get<ChainPositions::Peak>().coefficients, peakCoefficients);
 }
 
-void /*EQFedeAudioProcessor::*/updateCoefficients(Coefficients& old, const Coefficients& replacements)
+void updateCoefficients(Coefficients& old, const Coefficients& replacements)
 {
     *old = *replacements;
 }

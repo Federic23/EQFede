@@ -178,6 +178,8 @@ struct LookAndFeel : juce::LookAndFeel_V4
                             juce::ToggleButton& toggleButton,
                             bool shouldDrawButtonAsHighlighted,
                             bool shouldDrawButtonAsDown) override;
+
+    
 };
 
 struct RotarySliderWithLabels : juce::Slider
@@ -260,6 +262,9 @@ juce::Timer
     }
 private:
     EQFedeAudioProcessor& audioProcessor;
+
+    bool shouldShowFFTAnalysis = true;
+
     juce::Atomic<bool> parametersChanged{ false };
     MonoChain monoChain;
 
@@ -273,7 +278,8 @@ private:
 
     PathProducer leftPathProducer, rightPathProducer;
 
-    bool shouldShowFFTAnalysis = true;
+    
+
 };
 
 //==============================================================================
@@ -303,8 +309,6 @@ struct AnalyzerButton : juce::ToggleButton
     juce::Path randomPath;
 };
 
-/**
-*/
 class EQFedeAudioProcessorEditor : public juce::AudioProcessorEditor
 {
 public:

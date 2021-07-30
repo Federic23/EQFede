@@ -73,13 +73,6 @@ private:
     juce::AbstractFifo fifo{ Capacity };
 };
 
-
-enum Channel
-{
-    Right,
-    Left
-};
-
 //0 Idea de como funciona esto 
 template<typename BlockType>
 struct SingleChannelSampleFifo
@@ -145,14 +138,6 @@ private:
     }
 };
 
-enum Slope
-{
-    Slope_12,
-    Slope_24,
-    Slope_36,
-    Slope_48
-};
-
 struct ChainSettings 
 {
     float peakFreq{ 0 }, peakGainInDb{ 0 }, peakQuality{ 1.f };
@@ -160,22 +145,6 @@ struct ChainSettings
     Slope lowCutSlope{ Slope::Slope_12 }, highCutSlope{ Slope::Slope_12 };
 
     bool lowCutBypassed{ false }, peakBypassed{ false }, highCutBypassed{ false };
-};
-
-ChainSettings getChainSettings(juce::AudioProcessorValueTreeState& audioProcessorValueTreeState);
-
-using Filter = juce::dsp::IIR::Filter<float>;
-
-using CutFilter = juce::dsp::ProcessorChain<Filter, Filter, Filter, Filter>;
-
-using MonoChain = juce::dsp::ProcessorChain<CutFilter, Filter, CutFilter>;
-
-
-enum ChainPositions
-{
-    LowCut,
-    Peak,
-    HighCut
 };
 
 using Coefficients = Filter::CoefficientsPtr;
@@ -235,9 +204,37 @@ inline auto makeHighCutFilter(const ChainSettings& chainSettings, double sampleR
                                                                                         2 * (chainSettings.highCutSlope + 1));
 }
 
+enum Channel
+{
+    Right,
+    Left
+};
+
+enum ChainPositions
+{
+    LowCut,
+    Peak,
+    HighCut
+};
+
+enum Slope
+{
+    Slope_12,
+    Slope_24,
+    Slope_36,
+    Slope_48
+};
+
+ChainSettings getChainSettings(juce::AudioProcessorValueTreeState& audioProcessorValueTreeState);
+
+using Filter = juce::dsp::IIR::Filter<float>;
+
+using CutFilter = juce::dsp::ProcessorChain<Filter, Filter, Filter, Filter>;
+
+using MonoChain = juce::dsp::ProcessorChain<CutFilter, Filter, CutFilter>;
+
 //==============================================================================
-/**
-*/
+
 class EQFedeAudioProcessor  : public juce::AudioProcessor
 {
 public:

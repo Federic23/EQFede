@@ -9,6 +9,10 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
+juce::Colour red = juce::Colour(190u, 40u, 0u);
+juce::Colour slidersColor = juce::Colour(90u, 90u, 140u);
+juce::Colour slidersBorderColor = juce::Colour(10u, 10u, 10u);
+
 void LookAndFeel::drawRotarySlider(juce::Graphics& g,
                                     int x,
                                     int y,
@@ -27,11 +31,11 @@ void LookAndFeel::drawRotarySlider(juce::Graphics& g,
 
     auto enabled = slider.isEnabled();
 
-    g.setColour(enabled ? Colour(97u, 18u, 167u) : Colours::darkgrey);
+    g.setColour(enabled ? slidersColor : Colours::darkgrey);
     g.fillEllipse(bounds);
 
-    g.setColour(enabled ? Colour(255u, 154u, 1u) : Colours::grey);
-    g.drawEllipse(bounds, 1.f);
+    g.setColour(enabled ? slidersBorderColor : Colours::grey);
+    g.drawEllipse(bounds, 3.f);
 
     if (auto* rswl = dynamic_cast<RotarySliderWithLabels*>(&slider))
     {
@@ -103,7 +107,7 @@ void LookAndFeel::drawToggleButton(juce::Graphics& g,
 
         PathStrokeType pst(2.f, PathStrokeType::JointStyle::curved);
 
-        auto color = toggleButton.getToggleState() ? Colours::dimgrey : Colour(0u, 172u, 1u);
+        auto color = toggleButton.getToggleState() ? Colours::dimgrey : red;
 
         g.setColour(color);
         g.strokePath(powerButton, pst);
@@ -111,7 +115,7 @@ void LookAndFeel::drawToggleButton(juce::Graphics& g,
     }
     else if (auto* analyzerButton = dynamic_cast<AnalyzerButton*>(&toggleButton))
     {
-        auto color = !toggleButton.getToggleState() ? Colours::dimgrey : Colour(0u, 172u, 1u);
+        auto color = !toggleButton.getToggleState() ? Colours::dimgrey : red;
 
         g.setColour(color);
 
@@ -147,7 +151,7 @@ void RotarySliderWithLabels::paint(juce::Graphics& g)
     auto center = sliderBounds.toFloat().getCentre();
     auto radius = sliderBounds.getWidth() * 0.5f;
 
-    g.setColour(Colour(0u, 172u, 1u));
+    g.setColour(red);
     g.setFont(getTextHeight());
 
     auto numChoices = labels.size();
@@ -532,7 +536,7 @@ void ResponseCurveComponent::resized()
         r.setX(getWidth() - textWidth);
         r.setCentre(r.getCentreX(), y);
 
-        g.setColour(gDb == 0.f ? Colour(0u, 172u, 1u) : Colours::lightgrey);
+        g.setColour(gDb == 0.f ? red : Colours::lightgrey);
 
         g.drawFittedText(str, r, juce::Justification::centredLeft, 1);
 
@@ -675,7 +679,7 @@ analyzerEnabledButtonAttachment(audioProcessor.audioValueTreeState, "Analyzer En
         }
     };
 
-    setSize (600, 480);
+    setSize (480, 500);
 }
 
 EQFedeAudioProcessorEditor::~EQFedeAudioProcessorEditor()
@@ -692,7 +696,7 @@ void EQFedeAudioProcessorEditor::paint (juce::Graphics& g)
 {
     using namespace juce;
     // (Our component is opaque, so we must completely fill the background with a solid colour)
-    g.fillAll(Colours::black);
+    g.fillAll(Colours::sandybrown);
 }
 
 void EQFedeAudioProcessorEditor::resized()
