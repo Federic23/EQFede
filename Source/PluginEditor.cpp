@@ -27,8 +27,6 @@ void LookAndFeel::drawRotarySlider(juce::Graphics& g,
 
     auto bounds = Rectangle<float>(x, y, width, height);
 
-
-
     auto enabled = slider.isEnabled();
 
     g.setColour(enabled ? slidersColor : Colours::darkgrey);
